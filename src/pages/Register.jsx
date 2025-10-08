@@ -43,7 +43,7 @@ export default function Register() {
 
     try {
       const response = await axios.post(
-        "http://192.168.18.9:9090/api/auth/register",
+        "http://localhost:8081/api/auth/register",
         formData
       );
 

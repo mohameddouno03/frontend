@@ -4,7 +4,7 @@ import { Avatar } from "primereact/avatar";
 
 export default function DashboardNavbar({ toggleSidebar, userName = "Amy Elsner", userAvatar }) {
   return (
-    <div className="flex items-center justify-between bg-white shadow px-4 h-16">
+    <div className="flex items-center justify-between bg-black shadow px-4 h-16">
       {/* Bouton sidebar */}
       <Button
         icon="pi pi-bars"

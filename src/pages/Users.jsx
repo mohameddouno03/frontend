@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import DashboardLayout from "../Components/DashboardLayout";
 import { Button } from "primereact/button";
 import { Dialog } from "primereact/dialog";
@@ -11,83 +11,99 @@ import axios from "axios";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
-  const [userDialog, setUserDialog] = useState(false);
-  const [user, setUser] = useState({ name: "", email: "", password: "" });
+  const [user, setUser] = useState({ name: "", email: "", role: "" });
+  const [visible, setVisible] = useState(false);
   const [editing, setEditing] = useState(false);
   const toast = useRef(null);
 
-  const API_URL = "http://192.168.18.9:9090/api/users";
+  const API_URL = "http://localhost:8081/api/auth/users";
+  const token = localStorage.getItem("token");
+  const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
 
-  const fetchUsers = async () => { try { const res = await axios.get(API_URL); setUsers(res.data); } catch (err) { console.error(err); } };
-  useEffect(() => { fetchUsers(); }, []);
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get(API_URL, axiosConfig);
+      setUsers(res.data);
+    } catch {
+      toast.current.show({ severity: "error", summary: "Erreur" });
+    }
+  };
 
-  const openNew = () => { setUser({ name: "", email: "", password: "" }); setEditing(false); setUserDialog(true); };
-  const hideDialog = () => setUserDialog(false);
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const openNew = () => {
+    setUser({ name: "", email: "", role: "" });
+    setVisible(true);
+    setEditing(false);
+  };
 
   const saveUser = async () => {
     try {
-      if (editing) { await axios.put(`${API_URL}/${user.id}`, user); toast.current.show({ severity: "success", summary: "Updated", detail: "User updated" }); }
-      else { await axios.post(API_URL, user); toast.current.show({ severity: "success", summary: "Created", detail: "User created" }); }
-      fetchUsers(); hideDialog();
-    } catch (err) { console.error(err); toast.current.show({ severity: "error", summary: "Error", detail: "Operation failed" }); }
+      if (editing) await axios.put(`${API_URL}/${user.id}`, user, axiosConfig);
+      else await axios.post(API_URL, user, axiosConfig);
+      fetchUsers();
+      toast.current.show({ severity: "success", summary: "Sauvegardé" });
+      setVisible(false);
+    } catch {
+      toast.current.show({ severity: "error", summary: "Erreur" });
+    }
   };
 
-  const editUser = (user) => { setUser(user); setEditing(true); setUserDialog(true); };
-  const confirmDeleteUser = (user) => {
+  const deleteUser = (u) => {
     confirmDialog({
-      message: `Delete user "${user.name}"?`,
-      header: "Confirm",
-      icon: "pi pi-exclamation-triangle",
-      accept: async () => { try { await axios.delete(`${API_URL}/${user.id}`); fetchUsers(); toast.current.show({ severity: "success", summary: "Deleted", detail: "User deleted" }); } 
-      catch (err) { console.error(err); toast.current.show({ severity: "error", summary: "Error", detail: "Deletion failed" }); } },
+      message: `Supprimer ${u.name} ?`,
+      accept: async () => {
+        await axios.delete(`${API_URL}/${u.id}`, axiosConfig);
+        fetchUsers();
+        toast.current.show({ severity: "success", summary: "Supprimé" });
+      },
     });
   };
-
-  const userDialogFooter = (
-    <>
-      <Button label="Cancel" icon="pi pi-times" className="p-button-text" onClick={hideDialog} />
-      <Button label="Save" icon="pi pi-check" className="p-button-text" onClick={saveUser} />
-    </>
-  );
 
   return (
     <DashboardLayout>
       <Toast ref={toast} />
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Users</h2>
-        <Button label="Add User" icon="pi pi-plus" onClick={openNew} />
+      <div className="flex justify-between mb-6">
+        <h2 className="text-2xl font-bold">👤 Gestion des Utilisateurs</h2>
+        <Button label="Ajouter" icon="pi pi-plus" onClick={openNew} />
       </div>
 
-      <DataTable value={users} stripedRows responsiveLayout="scroll">
-        <Column field="id" header="ID" style={{ width: "5rem" }}></Column>
-        <Column field="name" header="Name"></Column>
-        <Column field="email" header="Email"></Column>
+      <DataTable value={users}>
+        <Column field="id" header="ID" />
+        <Column field="name" header="Nom" />
+        <Column field="email" header="Email" />
+        <Column field="role" header="Rôle" />
         <Column
           header="Actions"
-          body={(rowData) => (
+          body={(r) => (
             <>
-              <Button icon="pi pi-pencil" className="p-button-rounded p-button-text mr-2" onClick={() => editUser(rowData)} />
-              <Button icon="pi pi-trash" className="p-button-rounded p-button-text p-button-danger" onClick={() => confirmDeleteUser(rowData)} />
+              <Button icon="pi pi-pencil" onClick={() => { setUser(r); setEditing(true); setVisible(true); }} />
+              <Button icon="pi pi-trash" onClick={() => deleteUser(r)} />
             </>
           )}
-        ></Column>
+        />
       </DataTable>
 
-      <Dialog visible={userDialog} style={{ width: "450px" }} header={editing ? "Edit User" : "New User"} modal className="p-fluid" footer={userDialogFooter} onHide={hideDialog}>
-        <div className="field">
-          <label htmlFor="name">Name</label>
-          <InputText id="name" value={user.name} onChange={(e) => setUser({ ...user, name: e.target.value })} />
+      <Dialog visible={visible} onHide={() => setVisible(false)} footer={
+        <>
+          <Button label="Annuler" onClick={() => setVisible(false)} />
+          <Button label="Enregistrer" onClick={saveUser} />
+        </>
+      }>
+        <div>
+          <label>Nom</label>
+          <InputText value={user.name} onChange={(e) => setUser({ ...user, name: e.target.value })} />
         </div>
-        <div className="field">
-          <label htmlFor="email">Email</label>
-          <InputText id="email" value={user.email} onChange={(e) => setUser({ ...user, email: e.target.value })} />
+        <div>
+          <label>Email</label>
+          <InputText value={user.email} onChange={(e) => setUser({ ...user, email: e.target.value })} />
         </div>
-        {!editing && (
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <InputText id="password" value={user.password} onChange={(e) => setUser({ ...user, password: e.target.value })} type="password" />
-          </div>
-        )}
+        <div>
+          <label>Rôle</label>
+          <InputText value={user.role} onChange={(e) => setUser({ ...user, role: e.target.value })} />
+        </div>
       </Dialog>
     </DashboardLayout>
   );

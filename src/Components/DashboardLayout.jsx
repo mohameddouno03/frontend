@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }) {
         }`}
       >
         <div>
-          <div className="p-4 text-xl font-bold text-blue-600">Your Logo</div>
+          
           <ul className="list-none p-0 m-0">
             {menuItems.map((item, idx) => (
               <li key={idx}>
@@ -55,10 +55,7 @@ export default function DashboardLayout({ children }) {
             className="p-button-rounded p-button-text"
             onClick={() => setSidebarVisible(!sidebarVisible)} // même bouton ouvre/ferme
           />
-          <div className="flex items-center gap-4">
-            <span>Bienvenue</span>
-           
-          </div>
+          
         </div>
 
         {/* Contenu dynamique */}
